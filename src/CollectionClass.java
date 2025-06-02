@@ -45,22 +45,27 @@ class AccountManager implements Serializable {
 		return accounts.get(accNo);
 	}
 
-	public void getAllAccounts() {
+	public Collection<Account> getAllAccounts() {
 		repopulate();
-		for (Map.Entry<String, Account> entry : accounts.entrySet()) {
-			System.out.println(" Infos: " + entry.getValue());
-		}
+		return accounts.values();
 
 	}
 
 	@SuppressWarnings("unchecked")
 	public void repopulate() {
+		File file = new File("MyData.txt");
+		if(file.length() == 0)
+		{
+			System.out.println("File is empty, no record loaded!");
+			return;
+		}
+
 		try (FileInputStream fis = new FileInputStream("MyData.txt")) {
 			ObjectInputStream ois = new ObjectInputStream(fis);
 
 			//repopulating the hashmap
 			HashMap<String, Account> load= (HashMap<String, Account>) ois.readObject();
-			accounts.putAll(load);
+			accounts = load; //overwriting.
 
 		} catch (IOException | ClassNotFoundException e) {
 			throw new RuntimeException(e);
@@ -87,7 +92,7 @@ public class CollectionClass {
 
 	public static void main(String[] args) {
 		CollectionClass app = new CollectionClass();
-
+		app.accountManager.repopulate();
 
 		while (running) {
 			switch (states) {
@@ -120,7 +125,6 @@ public class CollectionClass {
 	}
 
 	private void displayMenu() {
-		accountManager.repopulate();
 		System.out.println("-----------MENU-----------");
 		System.out.println("Press the number for navigating in Menu");
 		System.out.println("1 : Create Account");
@@ -159,7 +163,9 @@ public class CollectionClass {
 
 	private void displayViewAll() {
 		System.out.println("----ViewAll an Account----");
-		accountManager.getAllAccounts();
+		for (Account accs:accountManager.getAllAccounts()) {
+			System.out.println(" Infos: " + accs);
+		}
 
 		System.out.println("-----------END-----------");
 		states = AppStates.MENU;
@@ -189,9 +195,10 @@ public class CollectionClass {
 	private void displayAccCreate() {
 		System.out.println("Creating an Account");
 		System.out.print("Enter a Name: ");
-		String name = sc.next().trim();
+		String name = sc.nextLine().trim();
 		Account acc = new Account(name);
 		accountManager.addAccount(acc);
+		accountManager.saveAccounts();
 		System.out.println("Account is created. Your given accNo is: " + acc.accNo);
 		System.out.println("-----------END-----------");
 
