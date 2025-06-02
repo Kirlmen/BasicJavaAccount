@@ -17,12 +17,15 @@ class Account implements Serializable {
 	String name;
 	int balance;
 
-	public Account() {}
-
 	public Account(String name) {
 		accNo = "A" + ((int) (Math.random() * 1000));
 		this.name = name;
 		balance = 0;
+	}
+
+	@Override
+	public String toString() {
+		return "Account no: " + accNo + " Name: " + name + " Balance: " + balance;
 	}
 
 }
@@ -43,11 +46,36 @@ class AccountManager implements Serializable {
 	}
 
 	public void getAllAccounts() {
-		//TODO:FROM THE FILE.
+		repopulate();
+		for (Map.Entry<String, Account> entry : accounts.entrySet()) {
+			System.out.println(" Infos: " + entry.getValue());
+		}
+
+	}
+
+	@SuppressWarnings("unchecked")
+	public void repopulate() {
+		try (FileInputStream fis = new FileInputStream("MyData.txt")) {
+			ObjectInputStream ois = new ObjectInputStream(fis);
+
+			//repopulating the hashmap
+			HashMap<String, Account> load= (HashMap<String, Account>) ois.readObject();
+			accounts.putAll(load);
+
+		} catch (IOException | ClassNotFoundException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public void saveAccounts() {
-		//TODO:FROM THE FILE.
+		try (FileOutputStream fos = new FileOutputStream("MyData.txt")) {
+			ObjectOutputStream oos = new ObjectOutputStream(fos);
+			oos.writeObject(accounts);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
+		System.out.println("Successfully Saved.");
 	}
 }
 
@@ -57,7 +85,7 @@ public class CollectionClass {
 	Scanner sc = new Scanner(System.in);
 	AccountManager accountManager = new AccountManager();
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) {
 		CollectionClass app = new CollectionClass();
 
 
@@ -92,7 +120,8 @@ public class CollectionClass {
 	}
 
 	private void displayMenu() {
-		System.out.println("----Menu----");
+		accountManager.repopulate();
+		System.out.println("-----------MENU-----------");
 		System.out.println("Press the number for navigating in Menu");
 		System.out.println("1 : Create Account");
 		System.out.println("2 : Delete Account");
@@ -130,24 +159,17 @@ public class CollectionClass {
 
 	private void displayViewAll() {
 		System.out.println("----ViewAll an Account----");
-
-		for (Map.Entry<String, Account> entry : accountManager.accounts.entrySet()) {
-			System.out.print("Account No: " + entry.getKey());
-			System.out.println(" Info: " +
-					"Name: " + entry.getValue().name +
-					" Balance: " + entry.getValue().balance);
-		}
+		accountManager.getAllAccounts();
 
 		System.out.println("-----------END-----------");
 		states = AppStates.MENU;
 	}
 
 	private void displaySave() {
-		try (FileOutputStream fos = new FileOutputStream("MyData.txt")) {
-
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		System.out.println("----Saving----");
+		accountManager.saveAccounts();
+		System.out.println("-----------END-----------");
+		states = AppStates.MENU;
 	}
 
 	private void displayView() {
@@ -158,17 +180,16 @@ public class CollectionClass {
 		if (displayed == null) {
 			System.out.println("Account not found!");
 		} else
-			System.out.println("Information: " + displayed.accNo + " " + displayed.name + " Balance: " + displayed.balance);
+			System.out.println(displayed);
 
 		System.out.println("-----------END-----------");
 		states = AppStates.MENU;
 	}
 
-	//TODO:IMPORT FROM THE FILE AND DISPLAY.
 	private void displayAccCreate() {
 		System.out.println("Creating an Account");
 		System.out.print("Enter a Name: ");
-		String name = sc.next();
+		String name = sc.next().trim();
 		Account acc = new Account(name);
 		accountManager.addAccount(acc);
 		System.out.println("Account is created. Your given accNo is: " + acc.accNo);
@@ -182,9 +203,10 @@ public class CollectionClass {
 		System.out.println("Write account no to delete : ");
 		String input = sc.next();
 		Account deleted = accountManager.removeAccount(input);
-		if (deleted != null)
+		if (deleted != null) {
 			System.out.println(" Successfully Deleted of the Account no: " + deleted.accNo);
-		else
+			accountManager.saveAccounts();
+		} else
 			System.out.println("Account not found.");
 
 		System.out.println("-----------END-----------");
